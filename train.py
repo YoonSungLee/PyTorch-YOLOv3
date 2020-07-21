@@ -1,6 +1,14 @@
+# python train.py --model_def config/yolov3-custom.cfg --data_config config/custom.data --pretrained_weights weights/darknet53.conv.74
+# focal option
+# gamma option
+# alpha option
+
+
+
 from __future__ import division
 
 from models import *
+# from models_focal import *
 from utils.logger import *
 from utils.utils import *
 from utils.datasets import *

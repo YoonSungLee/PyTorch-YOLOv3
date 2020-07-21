@@ -13,6 +13,30 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 
+##############################
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=1, gamma=2, logits=False, reduce=True):
+        super(FocalLoss, self).__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.logits = logits
+        self.reduce = reduce
+
+    def forward(self, inputs, targets):
+        nn.CrossEntropyLoss()
+
+        BCE_loss = nn.CrossEntropyLoss()(inputs, targets)
+
+        pt = torch.exp(-BCE_loss)
+        F_loss = self.alpha * (1 - pt) ** self.gamma * BCE_loss
+
+        if self.reduce:
+            return torch.mean(F_loss)
+        else:
+            return F_loss
+##############################
+
+
 def create_modules(module_defs):
     """
     Constructs module list of layer blocks from module configuration in module_defs
@@ -119,10 +143,6 @@ class YOLOLayer(nn.Module):
         self.metrics = {}
         self.img_dim = img_dim
         self.grid_size = 0  # grid size
-        self.logits = False
-        self.alpha = 0.25
-        self.gamma = 1
-        self.reduce = True
 
     def compute_grid_offsets(self, grid_size, cuda=True):
         self.grid_size = grid_size
@@ -135,19 +155,6 @@ class YOLOLayer(nn.Module):
         self.scaled_anchors = FloatTensor([(a_w / self.stride, a_h / self.stride) for a_w, a_h in self.anchors])
         self.anchor_w = self.scaled_anchors[:, 0:1].view((1, self.num_anchors, 1, 1))
         self.anchor_h = self.scaled_anchors[:, 1:2].view((1, self.num_anchors, 1, 1))
-
-    def FL(self, inputs, targets):
-        if self.logits:
-            BCE_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduce=False)
-        else:
-            BCE_loss = F.binary_cross_entropy(inputs, targets, reduce=False)
-        pt = torch.exp(-BCE_loss)
-        F_loss = self.alpha * (1 - pt) ** self.gamma * BCE_loss
-
-        if self.reduce:
-            return torch.mean(F_loss)
-        else:
-            return F_loss
 
     def forward(self, x, targets=None, img_dim=None):
 
@@ -210,10 +217,7 @@ class YOLOLayer(nn.Module):
             loss_y = self.mse_loss(y[obj_mask], ty[obj_mask])
             loss_w = self.mse_loss(w[obj_mask], tw[obj_mask])
             loss_h = self.mse_loss(h[obj_mask], th[obj_mask])
-            # Focal Loss
-            loss_conf_obj = self.FL(pred_conf[obj_mask], tconf[obj_mask])
-            # YOLO Loss
-            # loss_conf_obj = self.bce_loss(pred_conf[obj_mask], tconf[obj_mask])
+            loss_conf_obj = self.bce_loss(pred_conf[obj_mask], tconf[obj_mask])
             loss_conf_noobj = self.bce_loss(pred_conf[noobj_mask], tconf[noobj_mask])
             loss_conf = self.obj_scale * loss_conf_obj + self.noobj_scale * loss_conf_noobj
             loss_cls = self.bce_loss(pred_cls[obj_mask], tcls[obj_mask])
@@ -262,6 +266,7 @@ class Darknet(nn.Module):
         self.img_size = img_size
         self.seen = 0
         self.header_info = np.array([0, 0, 0, self.seen, 0], dtype=np.int32)
+        self.FL = FocalLoss(logits=True)
 
     def forward(self, x, targets=None):
         img_dim = x.shape[2]
@@ -276,8 +281,8 @@ class Darknet(nn.Module):
                 layer_i = int(module_def["from"])
                 x = layer_outputs[-1] + layer_outputs[layer_i]
             elif module_def["type"] == "yolo":
-                x, layer_loss = module[0](x, targets, img_dim)
-                loss += layer_loss
+                x, _ = module[0](x, targets, img_dim)
+                loss += self.FL(x, targets)
                 yolo_outputs.append(x)
             layer_outputs.append(x)
         yolo_outputs = to_cpu(torch.cat(yolo_outputs, 1))

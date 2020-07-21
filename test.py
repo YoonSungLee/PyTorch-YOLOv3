@@ -1,3 +1,13 @@
+# python test.py --model_def config/yolov3-custom.cfg --data_config config/custom.data --weights_path checkpoints/ver10_yolov3_ckpt_90.pth
+# Imbalanced Dataset(Orignal)
+# Average Precisions:
+# + Class '0' (with_mask) - AP: 0.7339504864391666
+# + Class '1' (without_mask) - AP: 0.6350758332179521
+# + Class '2' (mask_weared_incorrect) - AP: 0.2952380952380952
+# mAP: 0.5547548049650713
+
+
+
 from __future__ import division
 
 from models import *
@@ -48,6 +58,10 @@ def evaluate(model, path, iou_thres, conf_thres, nms_thres, img_size, batch_size
             outputs = non_max_suppression(outputs, conf_thres=conf_thres, nms_thres=nms_thres)
 
         sample_metrics += get_batch_statistics(outputs, targets, iou_threshold=iou_thres)
+
+    # positive code
+    if len(sample_metrics) == 0:
+        return np.array([0]), np.array([0]), np.array([0]), np.array([0]), np.array([0], dtype=np.int)
 
     # Concatenate sample statistics
     true_positives, pred_scores, pred_labels = [np.concatenate(x, 0) for x in list(zip(*sample_metrics))]

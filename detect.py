@@ -1,3 +1,5 @@
+# python detect.py --model_def config/yolov3-custom.cfg --weights_path checkpoints/ver01_yolov3_ckpt_92.pth --class_path data/custom/classes.names
+
 from __future__ import division
 
 from models import *
@@ -23,7 +25,7 @@ from matplotlib.ticker import NullLocator
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--image_folder", type=str, default="data/samples", help="path to dataset")
+    parser.add_argument("--image_folder", type=str, default="data/detect_image", help="path to dataset")
     parser.add_argument("--model_def", type=str, default="config/yolov3.cfg", help="path to model definition file")
     parser.add_argument("--weights_path", type=str, default="weights/yolov3.weights", help="path to weights file")
     parser.add_argument("--class_path", type=str, default="data/coco.names", help="path to class label file")
@@ -119,7 +121,7 @@ if __name__ == "__main__":
 
                 color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
                 # Create a Rectangle patch
-                bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor="none")
+                bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=1, edgecolor=color, facecolor="none")
                 # Add the bbox to the plot
                 ax.add_patch(bbox)
                 # Add label
