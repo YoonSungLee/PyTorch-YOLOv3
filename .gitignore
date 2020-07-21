@@ -14,8 +14,8 @@ checkpoints
 .vscode/
 logs/
 
-weights/darknet53.conv.74
-data/custom/labels
-data/custom/images
+weights/
+data/custom/labels/
+data/custom/images/
 data/detect_image/
 data/detect_video/

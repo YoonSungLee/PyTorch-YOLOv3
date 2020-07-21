@@ -1,4 +1,5 @@
-# python video.py --model_def config/yolov3-custom.cfg --weights_path checkpoints/ver05_yolov3_ckpt_94.pth --class_path data/custom/classes.names --vedio_file data/detect_video/video_mask.mp4
+# python video.py --model_def config/yolov3-custom.cfg --weights_path weights/ver08_yolov3_ckpt_22.pth --class_path data/custom/classes.names --vedio_file data/detect_video/video_mask.mp4
+
 
 from models import *
 from utils.utils import *
@@ -53,6 +54,13 @@ if __name__ == "__main__":
         cap = cv2.VideoCapture(opt.vedio_file)
     colors = np.random.randint(0, 255, size=(len(classes), 3), dtype="uint8")
     a=[]
+
+    fcc = cv2.VideoWriter_fourcc('D', 'I', 'V', 'X')
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    out = cv2.VideoWriter('output/detect_video/output.avi', fcc, fps, (width, height))
+
     while cap.isOpened():
         ret, img = cap.read()
         PILimg = np.array(Image.fromarray(cv2.cvtColor(img,cv2.COLOR_BGR2RGB)))
@@ -87,14 +95,15 @@ if __name__ == "__main__":
                         cv2.putText(img, str("%.2f" % float(conf)), (x2, y2 - box_h), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                                     color, 2)
 
-            print()
-            print()
+
         #cv2.putText(img,"Hello World!",(400,50),cv2.FONT_HERSHEY_PLAIN,2.0,(0,0,255),2)
         cv2.imshow('frame', img)
+        out.write(img)
         #cv2.waitKey(0)
 
         if cv2.waitKey(25) & 0xFF == ord('q'):
             break
     cap.release()
+    out.release()
     cv2.destroyAllWindows()
     print('finish')
